@@ -38,16 +38,32 @@ correctly and leaves the decision to a human:
   baseline.
 - **Baseline-vs-observed.** Per-customer scoring (not a universal threshold) is
   *how* AI cuts the false-positive rate: a legitimate spike within the customer's
-  own ceiling reads as explained; an out-of-pattern one does not.
+  own ceiling reads as explained; an out-of-pattern one does not. This feeds a
+  continuous **suspicion score** in `[0, 1]`, blended with the strongest typology
+  signal and weighted by the customer's risk rating / PEP status.
+- **A versioned, content-hashed typology library.** Detection thresholds live in
+  data (`typologies/library.yaml`), not code — each typology declares its own
+  lookback window, and the library's SHA-256 is written into every audit row, so a
+  disposition is permanently tied to the rule version that produced it.
+- **Windowed detection.** Each typology only looks back over its own
+  `window_days`, and the transaction read is bounded by `max_lookback_days`, so a
+  customer clean today does not flag for activity from long ago — and the query
+  stays cheap at scale.
 - **Typology detection, evidence-bound.** Deterministic detectors for
   structuring, layering / rapid-movement, and mule funnels — each firing only with
-  the **transactions that prove it** attached (locator + quote).
+  the **transactions that prove it** attached (locator + quote), and layering
+  requiring genuine *in-then-out* ordering (outflows after the inflow).
 - **The citation guardrail.** `reflect` drops any typology hypothesis it cannot
   evidence; no narrative claim survives without a transaction behind it; the eval
   harness measures citation precision.
 - **Recall is protected first.** The disposition order puts the typology check
   *before* any clear, so a suspicious alert can never be auto-cleared — the eval's
   false-negative gate is zero-tolerance.
+- **The headline is computed, not asserted.** The eval sweeps a clear threshold
+  over the suspicion score and reports the maximum **false-positive reduction at a
+  fixed false-negative rate of zero** — plus the operating threshold and the
+  separation margin between benign and suspicious. It is an actual swept curve, not
+  a single point.
 - **Auto-clear writes a cited rationale.** A false positive is cleared with a
   full, stored rationale in the disposition's reasoning trace — never a silent
   drop (the TD-Bank failure mode).
@@ -69,7 +85,7 @@ flowchart LR
   B --> C[Detect typologies<br/>structuring · layering · mule]
   C --> D[Cite each claim ↔ transactions]
   D --> E[Reflect<br/>drop any uncited claim]
-  E --> F[Assess baseline<br/>observed vs expected]
+  E --> F[Assess baseline + score<br/>deviation × typology × risk → suspicion]
   F --> G[Dispose<br/>clear / escalate / RFI]
   G --> H[(AlertScope<br/>typed contract)]
   H --> I[Policy engine<br/>first-match-wins]
@@ -79,7 +95,7 @@ flowchart LR
   K --> M[Compliance officer: dispose + file]
   J --> N[(Hash-chained audit + reasoning trace)]
   M --> N
-  H --> O[Eval harness<br/>FP-reduction @ fixed FN]
+  H --> O[Eval harness<br/>FP@FN threshold sweep]
   N --> P[Operator console — Alert-Disposition view]
 ```
 
@@ -104,6 +120,9 @@ src/vigil/
   security/       Fernet credential cipher, bcrypt passwords
   contracts/      AlertScope + TypologyClaim, TxnCitation, SARNarrative, Enrichment
   detection.py    typology detectors (structuring/layering/mule) + baseline (pure)
+  scoring.py      continuous suspicion score (baseline deviation × typology × risk)
+  typology_library.py  loads the versioned, content-hashed typology parameters
+  typologies/     library.yaml — detection thresholds as tunable, hashed data
   sar.py          5W SAR narrative + evidence index (pure)
   providers/      LLM client (mock-first; real model behind USE_LLM)
   retrieval/      deterministic embeddings (production swaps pg_trgm + pgvector)
@@ -112,7 +131,8 @@ src/vigil/
   policy/         domain-agnostic first-match-wins engine + YAML loader
   services/       hash-chained audit log (write + verify_chain)
   synthetic/      deterministic bank + alerts (seed AND eval ground truth)
-  eval/           metrics + backtest harness
+  eval/           metrics (incl. the FP@FN sweep) + backtest harness
+  mcp_server.py   optional Model Context Protocol server (read-only triage tools)
   api/            FastAPI console (dashboard, alerts, the Alert-Disposition view,
                   SAR, officer queue, eval, sources, audit) + Jinja2 + HTMX
   cli/            Typer CLI: version, db-init, demo, eval, serve, worker
@@ -160,13 +180,14 @@ make demo
 ```
 
 This rebuilds a clean schema, seeds *Meridian Bank* (customers, KYC, baselines,
-transaction histories) and 9 monitoring alerts with **planted typologies**
+transaction histories) and 11 monitoring alerts with **planted typologies**
 (structuring, layering, rapid cross-border movement, a mule funnel) and **planted
 false positives** (a retail spike, a high-volume payroll processor, recurring
-round-number vendor payments, a common-name sanctions hit), then triages each
-end-to-end and prints the disposition table (reason, typologies, disposition,
-confidence, route). Re-running is reproducible by default; pass `--keep` to
-preserve existing data.
+round-number vendor payments, a common-name sanctions hit, a sub-pattern cash
+deposit) — plus a non-typology, out-of-baseline wire that escalates on suspicion
+score alone — then triages each end-to-end and prints the disposition table
+(reason, typologies, disposition, confidence, route). Re-running is reproducible by
+default; pass `--keep` to preserve existing data.
 
 ### 3) Backtest the agent
 
@@ -175,8 +196,11 @@ make eval
 ```
 
 Backtests over the labeled synthetic bank and prints the metrics — headlined by
-**false-positive reduction at a fixed false-negative rate** — then loudly flags
-any false negative (a suspicious alert cleared) and any routing miss.
+**false-positive reduction at a fixed false-negative rate**, computed by sweeping a
+clear threshold over the suspicion score and reading off the operating point where
+no suspicious alert is cleared. It then prints the sweep curve, the separation
+margin, and loudly flags any false negative (a suspicious alert cleared) or routing
+miss.
 
 ### 4) Explore the operator console
 
@@ -208,6 +232,7 @@ vigil demo --keep              # seed/triage without resetting the schema
 vigil eval                     # backtest over labeled synthetic alerts
 vigil serve                    # run the FastAPI operator console
 vigil worker                   # RQ worker (production async path)
+vigil mcp                      # Model Context Protocol server (needs the [mcp] extra)
 ```
 
 ## Routing policy
@@ -245,10 +270,12 @@ rules:
 ```
 
 Conditions support exact match plus `_below` / `_above` operators on `action`,
-`disposition`, `has_kyc`, `typology_likely`, `baseline_explained`, and
-`confidence`. Tune thresholds in `.env` (`AUTO_MIN_CONFIDENCE`, `CTR_THRESHOLD`,
-`BASELINE_TOLERANCE`, `STRUCTURING_MIN_COUNT`) or load a per-tenant
-`PolicyVersion` to override the defaults without code changes.
+`disposition`, `has_kyc`, `typology_likely`, `baseline_explained`,
+`suspicion_score`, and `confidence`. Tune thresholds in `.env`
+(`CLEAR_THRESHOLD`, `MAX_LOOKBACK_DAYS`, `AUTO_MIN_CONFIDENCE`, `CTR_THRESHOLD`,
+`BASELINE_TOLERANCE`), tune detection parameters in `typologies/library.yaml`, or
+load a per-tenant `PolicyVersion` to override the routing defaults without code
+changes.
 
 ## Switching to live connectors
 
@@ -272,14 +299,20 @@ make test                      # unit + integration
 ```
 
 Unit tests cover the typology detectors (structuring / layering / mule, plus their
-negative cases), the generic policy engine and its recall-protecting order, the
+negative cases, likelihood monotonicity, the lookback window, and the layering
+in-then-out ordering fix), the suspicion score and its risk weighting, the FP@FN
+threshold sweep (the operating point never admits a false negative), the versioned
+typology library (stable content hash, hash changes on a parameter change, default
+fallback), the generic policy engine and its recall-protecting order, the
 `AlertScope` contract, the disposition guardrail (a clear can never precede the
-typology check), and SAR drafting (all 5W present + evidence index). Integration
-tests spin up a throwaway `vigil_test` Postgres database, reset to a clean schema
-each run, seed the synthetic bank, assert the pipeline spans cleared / escalated /
-RFI outcomes, and hold the eval bar (**zero false negatives**, disposition / route
+typology check), and SAR drafting (all 5W present + evidence index). The optional
+MCP server test skips cleanly when the `[mcp]` extra is absent. Integration tests
+spin up a throwaway `vigil_test` Postgres database, reset to a clean schema each
+run, seed the synthetic bank, assert the pipeline spans cleared / escalated / RFI
+outcomes, and hold the eval bar (**zero false negatives**, disposition / route
 accuracy, typology recall, citation precision, SAR completeness, and full
-false-positive reduction). They skip automatically if Postgres is unreachable.
+false-positive reduction at the computed operating point). They skip automatically
+if Postgres is unreachable.
 
 ## Design notes
 
@@ -287,6 +320,16 @@ false-positive reduction). They skip automatically if Postgres is unreachable.
   evidenced typology *before* it can ever clear, so a suspicious alert cannot be
   auto-cleared. The eval gates false negatives at 0 — the moral and regulatory
   core. FP reduction is only ever reported *at a fixed false-negative rate*.
+- **The headline is a computed curve.** A continuous suspicion score (baseline
+  deviation blended with the strongest typology signal, weighted by risk / PEP)
+  lets the eval *sweep* a clear threshold and report the maximum FP reduction
+  reachable with zero false negatives — with the operating threshold and the
+  benign-vs-suspicious separation margin alongside it. The trade-off is a knob
+  (`clear_threshold`), not a hard-coded outcome.
+- **Detection is data, windowed, and hashed.** Thresholds live in
+  `typologies/library.yaml`; each typology declares its own lookback window; the
+  library's SHA-256 is stamped into every audit row. Tune per tenant without
+  touching code, and an examiner can pin the exact parameters behind a disposition.
 - **The agent proposes; the officer disposes and files.** The case-management
   adapter exposes no autonomous `file_sar`; filing is an officer route in the
   console. This is the product, not a limitation.

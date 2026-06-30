@@ -228,6 +228,56 @@ CASE_SPECS: list[dict] = [
         ],
         "ground_truth": {"disposition": "escalate", "route": "hitl", "label": "suspicious", "typologies": ["layering"]},
     },
+    {
+        "key": "near_structuring_fp",
+        "customer": {
+            "external_id": "C-1010",
+            "name": "Marcus Reed",
+            "entity_type": "individual",
+            "risk_rating": "medium",
+        },
+        "kyc": {"occupation": "salaried", "pep": False, "expected_max": 12000, "channels": ["cash", "ach"]},
+        "alert": {
+            "id": "TM-5670",
+            "rule_id": "R-STRUCT",
+            "reason": "cash deposits near CTR threshold (below pattern count)",
+            "age_days": 3,
+        },
+        # Two sub-CTR cash deposits — scary-looking, but below the structuring pattern
+        # count, and within this customer's own established cash ceiling. The score
+        # must rank this below the escalate line so it auto-clears.
+        "txns": [
+            _txn("TXN-10001", 9500, "credit", "cash", "Cash Deposit", 7),
+            _txn("TXN-10002", 9400, "credit", "cash", "Cash Deposit", 3),
+            _txn("TXN-10003", 2500, "debit", "ach", "Rent", 5),
+        ],
+        "ground_truth": {"disposition": "clear", "route": "auto", "label": "fp", "typologies": []},
+    },
+    {
+        "key": "velocity_suspicious",
+        "customer": {
+            "external_id": "C-1011",
+            "name": "Priya Nair",
+            "entity_type": "individual",
+            "risk_rating": "high",
+        },
+        "kyc": {"occupation": "rideshare driver", "pep": False, "expected_max": 5000, "channels": ["ach", "card"]},
+        "alert": {
+            "id": "TM-5681",
+            "rule_id": "R-VELOCITY",
+            "reason": "inbound wire far exceeding expected activity",
+            "age_days": 1,
+        },
+        # No clean typology fires (a single inbound wire), but it is ~8x the
+        # customer's expected ceiling — high baseline deviation drives a high
+        # suspicion score and an escalation, proving the score is not just typology
+        # and that recall holds for a non-typology suspicious case.
+        "txns": [
+            _txn("TXN-11001", 42000, "credit", "wire", "Unknown Overseas Remitter", 2),
+            _txn("TXN-11002", 800, "debit", "card", "Grocery Store", 6),
+        ],
+        "ground_truth": {"disposition": "escalate", "route": "hitl", "label": "suspicious", "typologies": []},
+    },
 ]
 
 

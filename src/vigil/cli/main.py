@@ -116,6 +116,8 @@ def eval() -> None:  # noqa: A001 - command name
     table.add_column("metric")
     table.add_column("value", justify="right")
     for k, v in metrics.items():
+        if isinstance(v, (list, dict)):
+            continue  # the sweep curve is rendered separately below
         table.add_row(k, f"{v}")
     console.print(table)
 
@@ -124,8 +126,28 @@ def eval() -> None:  # noqa: A001 - command name
     else:
         console.print("[green]no false negatives — recall preserved (no suspicious alert cleared)[/green]")
     console.print(
-        f"[bold]FP reduction @ fixed FN(0):[/bold] {metrics['fp_reduction'] * 100:.0f}% of false positives auto-cleared"
+        f"[bold]FP reduction @ fixed FN(0):[/bold] {metrics['fp_reduction'] * 100:.0f}% of false positives "
+        f"auto-cleared at suspicion threshold {metrics['operating_threshold']:.3f} "
+        f"(separation margin {metrics['separation_margin']:.3f})"
     )
+
+    # The computed FP-reduction-at-fixed-FN curve — the headline made auditable.
+    curve = metrics.get("fp_sweep", [])
+    if curve:
+        sweep_table = Table(title="suspicion-threshold sweep (clear if score < threshold)")
+        sweep_table.add_column("threshold", justify="right")
+        sweep_table.add_column("fp_reduction", justify="right")
+        sweep_table.add_column("false_negatives", justify="right")
+        seen: set[tuple] = set()
+        for pt in curve:
+            row = (round(pt["fp_reduction"], 3), pt["false_negatives"])
+            if row in seen:
+                continue  # collapse flat segments so the table reads as a curve
+            seen.add(row)
+            fn = pt["false_negatives"]
+            fn_cell = f"[red]{fn}[/red]" if fn else "[green]0[/green]"
+            sweep_table.add_row(f"{pt['threshold']:.3f}", f"{pt['fp_reduction'] * 100:.0f}%", fn_cell)
+        console.print(sweep_table)
 
     route_miss = [r["key"] for r in records if r["pred_route"] != r["gt_route"]]
     if route_miss:
@@ -149,6 +171,18 @@ def worker() -> None:
     console.print(
         "[yellow]worker mode: production async path. The demo triages alerts inline via `vigil demo`.[/yellow]"
     )
+
+
+@app.command()
+def mcp() -> None:
+    """Expose the triage engine over the Model Context Protocol (requires the [mcp] extra)."""
+    try:
+        from vigil.mcp_server import mcp as server
+    except ModuleNotFoundError:
+        console.print(r"[red]MCP support is not installed.[/red] Install it with: pip install -e '.\[mcp]'")
+        raise typer.Exit(code=1) from None
+    console.print("[green]starting Vigil MCP server[/green] (stdio) — tools: list_alerts, get_alert, …")
+    server.run()
 
 
 if __name__ == "__main__":

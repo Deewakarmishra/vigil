@@ -193,8 +193,12 @@ def eval_view(request: Request, session: Session = Depends(get_session)) -> HTML
 
 @router.get("/sources", response_class=HTMLResponse)
 def sources(request: Request) -> HTMLResponse:
+    from vigil.typology_library import get_library
+
     return templates.TemplateResponse(
-        request, "console/sources.html", {"request": request, "adapters": list_adapter_info()}
+        request,
+        "console/sources.html",
+        {"request": request, "adapters": list_adapter_info(), "library": get_library()},
     )
 
 

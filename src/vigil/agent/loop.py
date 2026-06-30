@@ -44,8 +44,8 @@ def _rationale(scope: AlertScope) -> str:
 def build_alert_scope(ctx: AlertContext) -> tuple[AlertScope, dict]:
     """Run the agent loop and return ``(scope, routing_facts)``."""
 
-    enrichment = step_enrich(ctx)
     hyps = step_reflect(step_hypothesize(ctx))
+    enrichment = step_enrich(ctx, hyps)
 
     scope = AlertScope(
         alert_id=str(ctx.alert.id),
@@ -60,10 +60,12 @@ def build_alert_scope(ctx: AlertContext) -> tuple[AlertScope, dict]:
         evidenced=bool(scope.evidenced_hypotheses),
         has_kyc=enrichment.has_kyc,
         baseline_explained=enrichment.baseline_explained,
+        suspicion_score=enrichment.suspicion_score,
+        clear_threshold=ctx.settings.clear_threshold,
     )
     scope.disposition = disposition
     scope.decision_action = action
-    scope.confidence = confidence_for(disposition, scope.top_likelihood, has_kyc=enrichment.has_kyc)
+    scope.confidence = confidence_for(disposition, enrichment.suspicion_score, has_kyc=enrichment.has_kyc)
     scope.rationale_md = _rationale(scope)
 
     if disposition == Disposition.ESCALATE and scope.evidenced_hypotheses:

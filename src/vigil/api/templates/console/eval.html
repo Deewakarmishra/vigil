@@ -7,9 +7,33 @@
 {% else %}
 <div class="kpis">
   {% for k, v in run.metrics.items() %}
-    <div class="kpi"><div class="kpi-v">{{ v }}</div><div class="kpi-l">{{ k }}</div></div>
+    {% if k != 'fp_sweep' %}
+      <div class="kpi"><div class="kpi-v">{{ v }}</div><div class="kpi-l">{{ k }}</div></div>
+    {% endif %}
   {% endfor %}
 </div>
+
+{% set curve = run.metrics.get('fp_sweep', []) %}
+{% if curve %}
+<h2>Suspicion-threshold sweep <span class="muted">/ the FP-reduction-at-fixed-FN curve, computed</span></h2>
+<p class="muted">An alert clears when its suspicion score is below the threshold. The
+operating point is the highest false-positive reduction reachable with <b>zero</b>
+false negatives — recall is never traded for a prettier number.</p>
+<table class="grid">
+  <thead><tr><th>threshold</th><th>FP reduction</th><th>false negatives</th></tr></thead>
+  <tbody>
+  {% for pt in curve %}
+    <tr>
+      <td class="mono">{{ "%.3f"|format(pt.threshold) }}</td>
+      <td class="mono">{{ "%.0f"|format(pt.fp_reduction * 100) }}%</td>
+      <td class="mono">{% if pt.false_negatives %}<span class="pill danger">{{ pt.false_negatives }}</span>{% else %}0{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<h2>Per-alert</h2>
 <table class="grid">
   <thead><tr><th>alert</th><th>disposition</th><th>route</th><th>typologies</th><th>false-negative</th></tr></thead>
   <tbody>

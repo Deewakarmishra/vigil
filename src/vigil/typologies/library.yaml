@@ -1,0 +1,35 @@
+# Vigil typology library — the auditable, content-hashed detection parameters.
+#
+# Thresholds live in data, not code, so a tenant can tune them and an examiner can
+# pin exactly which parameters produced a disposition. The loader computes a
+# SHA-256 over the canonical parameter set; that hash is written into every audit
+# row, so a disposition is forever tied to the rule version that produced it.
+#
+# Bump `version` whenever you change a parameter. Each typology declares its own
+# `window_days` — detection is scoped to a recent lookback, not a customer's whole
+# history (a customer clean today should not flag for activity from two years ago).
+
+version: "2026.06"
+
+typologies:
+  # Repeated cash deposits sitting just beneath the $10k CTR reporting threshold.
+  structuring:
+    window_days: 30
+    floor: 9000.0          # deposits at/above this ...
+    ceiling: 10000.0       # ... and below this (the CTR threshold) are sub-CTR
+    min_count: 3           # this many sub-CTR cash credits constitute a pattern
+    channels: ["cash"]
+
+  # Funds received and rapidly moved back out to obscure their origin.
+  layering:
+    window_days: 14
+    min_total_in: 20000.0  # minimum inbound in-window to consider layering
+    movement_ratio: 0.7    # outbound must be >= this fraction of inbound
+    min_outflows: 2        # spread across at least this many outbound transfers
+    require_out_after_in: true  # outflows must occur on/after the inbound (real layering)
+
+  # Many small unrelated inbound payments funneled into a lump outbound transfer.
+  mule:
+    window_days: 30
+    max_small_credit: 2000.0     # inbound below this counts as a "small" credit
+    min_distinct_senders: 5      # this many distinct senders constitute a funnel

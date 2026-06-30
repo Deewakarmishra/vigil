@@ -57,9 +57,13 @@ def test_decide_disposition_protects_recall():
 
 
 @pytest.mark.unit
-def test_confidence_bands():
-    assert confidence_for(Disposition.CLEAR, 0.0, has_kyc=True) == 0.9
+def test_confidence_tracks_the_suspicion_score():
+    # On a clear, confidence is the inverse of suspicion (how strongly it reads benign).
+    assert confidence_for(Disposition.CLEAR, 0.0, has_kyc=True) == 1.0
+    assert confidence_for(Disposition.CLEAR, 0.3, has_kyc=True) == 0.7
+    # On an escalation, confidence tracks the score (floored so it never trips low-conf routing).
     assert confidence_for(Disposition.ESCALATE, 0.84, has_kyc=True) == 0.84
+    assert confidence_for(Disposition.ESCALATE, 0.1, has_kyc=True) == 0.6
     assert confidence_for(Disposition.NEED_INFO, 0.0, has_kyc=False) == 0.4
 
 

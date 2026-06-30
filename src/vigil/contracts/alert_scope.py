@@ -44,6 +44,8 @@ class Enrichment(BaseModel):
     observed_amount: float = 0.0
     expected_max_amount: float = 0.0
     baseline_explained: bool = False
+    baseline_deviation: float = 0.0
+    suspicion_score: float = 0.0
 
 
 class SARNarrative(BaseModel):
@@ -106,5 +108,6 @@ class AlertScope(BaseModel):
             "has_kyc": self.enrichment.has_kyc,
             "typology_likely": bool(self.evidenced_hypotheses),
             "baseline_explained": self.enrichment.baseline_explained,
+            "suspicion_score": self.enrichment.suspicion_score,
             "confidence": self.confidence,
         }

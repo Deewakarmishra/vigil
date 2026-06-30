@@ -19,4 +19,24 @@
 and zero real financial data. Set <code>CONNECTOR_MODE=live</code> and fill credentials to wire a
 real TM engine, ledger, and case system. Filing a SAR is always an officer action — no adapter
 files autonomously.</p>
+
+{% if library %}
+<h2>Typology library <span class="muted">/ the auditable, content-hashed detection parameters</span></h2>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-v">{{ library.version }}</div><div class="kpi-l">version</div></div>
+  <div class="kpi"><div class="kpi-v mono">{{ library.short_hash }}</div><div class="kpi-l">content hash (SHA-256)</div></div>
+  <div class="kpi"><div class="kpi-v">{{ library.typologies|length }}</div><div class="kpi-l">typologies</div></div>
+</div>
+<table class="grid">
+  <thead><tr><th>typology</th><th>parameters</th></tr></thead>
+  <tbody>
+  {% for name, params in library.typologies.items() %}
+    <tr><td>{{ name }}</td><td class="mono">{{ params }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted">Detection thresholds live in data, not code. This exact hash is written into every
+audit row, so a disposition is permanently tied to the rule version that produced it. Tune
+<code>typologies/library.yaml</code> per tenant; bump <code>version</code> on every change.</p>
+{% endif %}
 {% endblock %}

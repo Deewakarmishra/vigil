@@ -77,6 +77,11 @@ llm = [
     "anthropic>=0.39.0",
     "sentence-transformers>=2.7.0",
 ]
+# Opt-in: expose the triage engine over the Model Context Protocol. Not needed for
+# the demo, the eval, or the console — `vigil mcp` requires this extra.
+mcp = [
+    "mcp>=1.2.0",
+]
 
 [project.scripts]
 vigil = "vigil.cli.main:app"
@@ -85,7 +90,7 @@ vigil = "vigil.cli.main:app"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"vigil" = ["api/templates/**/*.html", "api/static/**/*"]
+"vigil" = ["api/templates/**/*.html", "api/static/**/*", "typologies/*.yaml"]
 
 [tool.ruff]
 line-length = 120

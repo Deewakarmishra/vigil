@@ -6,6 +6,7 @@
 <div class="card">
   <div class="kpis">
     <div class="kpi"><div class="kpi-v">{{ scope.get('disposition','') }}</div><div class="kpi-l">recommended</div></div>
+    <div class="kpi"><div class="kpi-v">{{ "%.2f"|format(scope.get('enrichment',{}).get('suspicion_score',0)) }}</div><div class="kpi-l">suspicion score</div></div>
     <div class="kpi"><div class="kpi-v">{{ "%.2f"|format(alert.confidence) }}</div><div class="kpi-l">confidence</div></div>
     <div class="kpi"><div class="kpi-v">{{ customer.external_id if customer else '' }}</div><div class="kpi-l">{{ scope.get('enrichment',{}).get('entity_type','') }} · risk {{ scope.get('enrichment',{}).get('risk_rating','') }}</div></div>
     <div class="kpi"><div class="kpi-v">${{ "{:,.0f}".format(scope.get('enrichment',{}).get('observed_amount',0)) }}</div><div class="kpi-l">observed vs ${{ "{:,.0f}".format(scope.get('enrichment',{}).get('expected_max_amount',0)) }} baseline</div></div>

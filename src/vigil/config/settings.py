@@ -65,6 +65,8 @@ class Settings(BaseSettings):
     ctr_threshold: float = 10000.0  # CTR reporting threshold (structuring sits just beneath)
     baseline_tolerance: float = 1.2  # observed within this × the expected ceiling reads as explained
     structuring_min_count: int = 3  # cash deposits under CTR to flag structuring
+    max_lookback_days: int = 90  # detection reads at most this many days of history (bounded query)
+    clear_threshold: float = 0.30  # auto-clear only when the suspicion score is at/below this
 
     # --- Live connectors ---
     tm_provider: Literal["mock", "actimize", "unit21", "inhouse"] = "mock"

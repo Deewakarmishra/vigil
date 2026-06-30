@@ -32,6 +32,7 @@ from vigil.models.policy import PolicyDefinition, PolicyVersion
 from vigil.models.review import ReviewTask
 from vigil.policy.engine import evaluate_routing
 from vigil.services.audit import write_audit
+from vigil.typology_library import get_library
 
 # Default routing used when a tenant has no PolicyDefinition yet. Mirrors
 # policies/routing.yaml. First match wins; an empty `when` is the default.
@@ -113,6 +114,7 @@ def resolve_alert(session: Session, alert_id: uuid.UUID) -> ResolveResult:
     scope, facts = build_alert_scope(ctx)
     rules = _load_rules(session, ctx.tenant_id)
     decision = evaluate_routing(rules, facts)
+    library = get_library()
 
     adapters = build_adapters(ctx.settings)
     refs: dict = {}
@@ -179,12 +181,18 @@ def resolve_alert(session: Session, alert_id: uuid.UUID) -> ResolveResult:
             "disposition": scope.disposition.value,
             "typologies": [h.typology.value for h in scope.evidenced_hypotheses],
             "confidence": scope.confidence,
+            "suspicion_score": scope.enrichment.suspicion_score,
             "route": decision.route,
             "rule": decision.matched_rule_id,
             "outcome": outcome,
             "refs": refs,
         },
-        meta={"reason": decision.reason, "rule_id": alert.rule_id},
+        meta={
+            "reason": decision.reason,
+            "rule_id": alert.rule_id,
+            "typology_library_version": library.version,
+            "typology_library_hash": library.short_hash,
+        },
     )
     session.flush()
     return ResolveResult(
