@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Vigil{% endblock %}</title>
+  <link rel="stylesheet" href="/static/console.css" />
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body>
+  <nav class="nav">
+    <a class="brand" href="/">🛡 Vigil</a>
+    <div class="links">
+      <a href="/">Dashboard</a>
+      <a href="/alerts">Alerts</a>
+      <a href="/review">Officer queue</a>
+      <a href="/eval">Eval</a>
+      <a href="/sources">Sources</a>
+      <a href="/audit">Audit</a>
+    </div>
+    <span class="tag">AML alert-triage &amp; SAR-drafting agent</span>
+  </nav>
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

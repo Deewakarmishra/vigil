@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Vigil — Sources{% endblock %}
+{% block content %}
+<h1>Connectors</h1>
+<table class="grid">
+  <thead><tr><th>provider</th><th>kind</th><th>mode</th><th>note</th></tr></thead>
+  <tbody>
+  {% for a in adapters %}
+    <tr>
+      <td>{{ a.provider }}</td>
+      <td>{{ a.kind }}</td>
+      <td><span class="pill {{ 'ok' if a.mode=='live' else '' }}">{{ a.mode }}</span></td>
+      <td>{{ a.note }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted">Every connector defaults to a deterministic mock so the demo runs with zero API keys
+and zero real financial data. Set <code>CONNECTOR_MODE=live</code> and fill credentials to wire a
+real TM engine, ledger, and case system. Filing a SAR is always an officer action — no adapter
+files autonomously.</p>
+{% endblock %}

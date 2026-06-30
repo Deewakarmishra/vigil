@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Vigil — SAR draft{% endblock %}
+{% block content %}
+<h1>SAR draft <span class="muted">· {{ alert.external_alert_id if alert else '' }}</span></h1>
+{% if not sar %}
+  <div class="card"><p>No SAR draft for this alert.</p></div>
+{% else %}
+<div class="card">
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-v">${{ "{:,.0f}".format(sar.total_amount) }}</div><div class="kpi-l">aggregate</div></div>
+    <div class="kpi"><div class="kpi-v">{{ sar.period_start }}</div><div class="kpi-l">→ {{ sar.period_end }}</div></div>
+    <div class="kpi"><div class="kpi-v">{{ sar.status }}</div><div class="kpi-l">status</div></div>
+  </div>
+  <pre class="mono">{{ sar.narrative_md }}</pre>
+  {% if sar.status != 'filed' %}
+  <form method="post" action="/alerts/{{ alert.id }}/file"><button type="submit">Review &amp; file (officer)</button></form>
+  {% else %}<p class="pill ok">filed by officer</p>{% endif %}
+</div>
+<p class="muted">The agent prepares this draft; a compliance officer reviews and files. Vigil never
+files a SAR and never restricts an account.</p>
+{% endif %}
+{% endblock %}

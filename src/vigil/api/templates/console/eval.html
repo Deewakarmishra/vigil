@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Vigil — Eval{% endblock %}
+{% block content %}
+<h1>Eval <span class="muted">/ backtest vs ground truth · FP-reduction @ fixed FN</span></h1>
+{% if not run %}
+  <div class="card"><p>No eval run yet. Run <code>vigil eval</code>.</p></div>
+{% else %}
+<div class="kpis">
+  {% for k, v in run.metrics.items() %}
+    <div class="kpi"><div class="kpi-v">{{ v }}</div><div class="kpi-l">{{ k }}</div></div>
+  {% endfor %}
+</div>
+<table class="grid">
+  <thead><tr><th>alert</th><th>disposition</th><th>route</th><th>typologies</th><th>false-negative</th></tr></thead>
+  <tbody>
+  {% for c in cases %}
+    <tr>
+      <td>{{ c.case_ref }}</td>
+      <td>{{ "✓" if c.scores.disposition_ok else "✗" }} {{ c.predictions.disposition }}</td>
+      <td>{{ "✓" if c.scores.route_ok else "✗" }} {{ c.predictions.route }}</td>
+      <td>{{ c.predictions.typologies | join(", ") or "—" }}</td>
+      <td>{{ "⚠ FN" if c.scores.false_negative else "·" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

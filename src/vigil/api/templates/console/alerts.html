@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Vigil — Alerts{% endblock %}
+{% block content %}
+<h1>Alert queue</h1>
+<table class="grid">
+  <thead>
+    <tr><th>alert</th><th>customer</th><th>reason</th><th>typologies</th><th>disposition</th><th>conf</th><th>age</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.alert.external_alert_id }}</td>
+      <td>{{ r.customer.external_id if r.customer else "—" }}</td>
+      <td>{{ r.alert.alert_reason[:46] }}</td>
+      <td>
+        {% for h in r.scope.get('hypotheses', []) %}<span class="pill danger">{{ h.typology }}</span> {% endfor %}
+        {% if not r.scope.get('hypotheses', []) %}—{% endif %}
+      </td>
+      <td>{% set d = r.alert.disposition %}<span class="pill {{ 'ok' if d=='clear' else ('danger' if d=='escalate' else 'warn') }}">{{ d }}</span></td>
+      <td>{{ "%.2f"|format(r.alert.confidence) }}</td>
+      <td>{{ r.alert.age_days }}d</td>
+      <td><a href="/alerts/{{ r.alert.id }}">open →</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

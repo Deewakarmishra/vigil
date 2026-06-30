@@ -1,0 +1,33 @@
+# Vigil routing policy — first match wins; an empty `when` is the default.
+# Mirrors agent/runner.py DEFAULT_RULES. The engine matches each rule's `when`
+# block against the flat fact dict from AlertScope.routing_facts():
+#   action, disposition, has_kyc, typology_likely, baseline_explained, confidence
+# Operators: exact match, plus `<key>_below` / `<key>_above` for numerics.
+#
+# route: auto  → the agent disposed (auto-clear with a stored cited rationale)
+# route: hitl  → a compliance officer must dispose (escalation + SAR draft) or
+#                supply information (RFI). The agent never files or freezes.
+#
+# Recall is protected by ordering: the typology check precedes any clear, so a
+# suspicious alert can never be auto-cleared.
+rules:
+  - id: typology-likely
+    when: { typology_likely: true }
+    route: hitl
+    reason: "evidenced typology — escalate to officer with SAR draft"
+  - id: missing-kyc
+    when: { has_kyc: false }
+    route: hitl
+    reason: "no KYC on file — request-for-information"
+  - id: baseline-explained
+    when: { baseline_explained: true }
+    route: auto
+    reason: "within customer baseline, no typology — auto-clear with stored rationale"
+  - id: low-confidence
+    when: { confidence_below: 0.6 }
+    route: hitl
+    reason: "low confidence — officer review"
+  - id: default-escalate
+    when: {}
+    route: hitl
+    reason: "unexplained — officer review"

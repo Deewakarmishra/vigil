@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Vigil — Alert-Disposition{% endblock %}
+{% block content %}
+<h1>Alert-Disposition <span class="muted">· {{ alert.external_alert_id }}</span></h1>
+
+<div class="card">
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-v">{{ scope.get('disposition','') }}</div><div class="kpi-l">recommended</div></div>
+    <div class="kpi"><div class="kpi-v">{{ "%.2f"|format(alert.confidence) }}</div><div class="kpi-l">confidence</div></div>
+    <div class="kpi"><div class="kpi-v">{{ customer.external_id if customer else '' }}</div><div class="kpi-l">{{ scope.get('enrichment',{}).get('entity_type','') }} · risk {{ scope.get('enrichment',{}).get('risk_rating','') }}</div></div>
+    <div class="kpi"><div class="kpi-v">${{ "{:,.0f}".format(scope.get('enrichment',{}).get('observed_amount',0)) }}</div><div class="kpi-l">observed vs ${{ "{:,.0f}".format(scope.get('enrichment',{}).get('expected_max_amount',0)) }} baseline</div></div>
+  </div>
+  <p class="muted"><b>Alert reason:</b> {{ alert.alert_reason }}</p>
+  <p class="muted"><b>Rationale:</b> {{ scope.get('rationale_md','') }}</p>
+</div>
+
+<h2>Typology hypotheses <span class="muted">/ every claim cited to a transaction</span></h2>
+{% if not hypotheses %}
+  <div class="card"><p>No evidenced typology — disposition rests on baseline + KYC.</p></div>
+{% else %}
+{% for h in scope.get('hypotheses', []) %}
+<div class="card">
+  <h3>{{ h.typology }} <span class="pill danger">likelihood {{ "%.2f"|format(h.likelihood) }}</span></h3>
+  <p>{{ h.rationale }}</p>
+  <table class="grid">
+    <thead><tr><th>transaction</th><th>detail</th></tr></thead>
+    <tbody>
+    {% for e in h.evidence %}
+      <tr><td class="mono">{{ e.locator }}</td><td class="mono">{{ e.quote }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if sar %}
+<h2>SAR draft <span class="muted">/ officer reviews + files</span></h2>
+<p><a href="/alerts/{{ alert.id }}/sar">open SAR draft →</a></p>
+{% endif %}
+
+<p><a href="/alerts">← back to alerts</a></p>
+{% endblock %}

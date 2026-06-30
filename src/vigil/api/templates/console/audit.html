@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Vigil — Audit{% endblock %}
+{% block content %}
+<h1>Audit log
+  {% if chain_ok %}<span class="pill ok">chain verified</span>{% else %}<span class="pill danger">chain broken</span>{% endif %}
+</h1>
+<table class="grid">
+  <thead><tr><th>when</th><th>action</th><th>actor</th><th>detail</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.created_at.strftime("%b %d %H:%M:%S") }}</td>
+      <td>{{ r.action }}</td>
+      <td>{{ r.actor }}</td>
+      <td class="mono">{{ r.after.get('alert','') }} · {{ r.after.get('disposition','') }} · {{ r.after.get('outcome','') }} · {{ r.after.get('rule','') }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted">Each row hashes the previous row's hash plus its own content (SHA-256), so any edit
+or deletion in history is detectable — the artifact an examiner asks for.</p>
+{% endblock %}

@@ -1,0 +1,128 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vigil"
+version = "0.1.0"
+description = "Self-hosted AML alert-triage & SAR-drafting agent: reads a transaction-monitoring alert like a senior analyst — enriching it with KYC, the customer's behavioral baseline, counterparties, and prior cases — then clears the false positive with a cited rationale or escalates the real one with an evidence-indexed SAR narrative, every claim bound to the transaction that proves it. The agent proposes; a compliance officer disposes and files. Recall-preserving eval (FP-reduction at fixed FN), immutable hash-chained audit, full reasoning-trace storage. Runs on a synthetic bank with zero keys."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "acilox", email = "hello@acilox.dev" }]
+keywords = [
+    "agent",
+    "aml",
+    "bsa",
+    "sar",
+    "transaction-monitoring",
+    "fintech",
+    "compliance",
+    "false-positive-reduction",
+    "fastapi",
+    "hitl",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business",
+]
+dependencies = [
+    # Web / API
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "jinja2>=3.1.4",
+    "python-multipart>=0.0.9",
+    "itsdangerous>=2.2.0",
+    # ORM / DB
+    "sqlalchemy>=2.0.30",
+    "alembic>=1.13.0",
+    "psycopg2-binary>=2.9.9",
+    # Queue (production async path; demo runs inline)
+    "redis>=5.0.0",
+    "rq>=1.16.0",
+    # HTTP clients (live connectors)
+    "httpx>=0.27.0",
+    "tenacity>=8.2.3",
+    # Config / validation
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0.1",
+    "email-validator>=2.1.0",
+    # Security
+    "cryptography>=42.0.0",
+    "bcrypt>=4.1.0",
+    # Logging
+    "structlog>=24.1.0",
+    # CLI
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "pytest-mock>=3.12.0",
+    "ruff>=0.3.0",
+    "black>=24.2.0",
+    "mypy>=1.9.0",
+    "faker>=24.0.0",
+]
+# Opt-in: real model providers. The platform runs fully without these.
+llm = [
+    "anthropic>=0.39.0",
+    "sentence-transformers>=2.7.0",
+]
+
+[project.scripts]
+vigil = "vigil.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"vigil" = ["api/templates/**/*.html", "api/static/**/*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "B", "UP", "S", "A", "C4", "T20"]
+# UP042: intentional `str, Enum` for JSON-stable enums shared across API + DB.
+# B008: FastAPI's Depends()/Form() default-argument pattern.
+# E501: black owns line width; long string literals it cannot split are fine.
+ignore = ["S101", "T201", "UP042", "B008", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S106"]
+"alembic/**/*.py" = ["E501", "N806"]
+"**/config/settings.py" = ["S105"]  # placeholder defaults, not real secrets
+# S324: SHA-1 used for deterministic non-crypto hashing (embeddings, mock refs).
+"**/retrieval/embeddings.py" = ["S324"]
+"**/adapters/mock.py" = ["S324"]
+
+[tool.black]
+line-length = 120
+target-version = ["py311"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
+disallow_untyped_defs = false
+warn_return_any = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra --strict-markers --tb=short"
+markers = [
+    "unit: unit tests",
+    "integration: integration tests requiring Postgres",
+]

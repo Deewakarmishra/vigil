@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Vigil — Officer queue{% endblock %}
+{% block content %}
+<h1>Officer queue <span class="muted">/ escalations &amp; RFIs awaiting disposition</span></h1>
+{% if not rows %}
+  <div class="card"><p>Nothing in the queue.</p></div>
+{% else %}
+<table class="grid">
+  <thead><tr><th>alert</th><th>reason</th><th>kind</th><th>note</th><th></th><th></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.alert.external_alert_id if r.alert else '—' }}</td>
+      <td>{{ r.alert.alert_reason[:40] if r.alert else '' }}</td>
+      <td><span class="pill {{ 'danger' if r.task.kind=='escalation' else 'warn' }}">{{ r.task.kind }}</span></td>
+      <td>{{ r.task.reason }}</td>
+      <td><a href="/alerts/{{ r.alert.id }}">open →</a></td>
+      <td><form method="post" action="/review/{{ r.task.id }}/approve"><button type="submit">Confirm</button></form></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

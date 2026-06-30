@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Vigil — Dashboard{% endblock %}
+{% block content %}
+{% if not tenant %}
+  <div class="card"><h2>No data yet</h2><p>Run <code>vigil demo</code> to seed a synthetic bank and triage alerts.</p></div>
+{% else %}
+<h1>Dashboard <span class="muted">· {{ tenant.name }}</span></h1>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-v">{{ total }}</div><div class="kpi-l">alerts</div></div>
+  <div class="kpi"><div class="kpi-v">{{ clear_rate }}%</div><div class="kpi-l">auto-cleared (FP)</div></div>
+  <div class="kpi"><div class="kpi-v">{{ escalated }}</div><div class="kpi-l">escalated</div></div>
+  <div class="kpi"><div class="kpi-v">{{ sar_count }}</div><div class="kpi-l">SAR drafts</div></div>
+  <div class="kpi"><div class="kpi-v">{{ rfi }}</div><div class="kpi-l">RFI</div></div>
+  <div class="kpi"><div class="kpi-v">{{ max_age }}d</div><div class="kpi-l">oldest in backlog</div></div>
+</div>
+<p class="muted">Vigil reads every alert like a senior analyst — enriching it with KYC, the
+customer's behavioral baseline, counterparties, and prior cases — then <b>clears the false
+positive with a cited rationale</b> or <b>escalates the real one with an evidence-indexed SAR
+narrative</b>. The agent proposes; a compliance officer disposes and files. Every typology claim
+is bound to the transaction that proves it; nothing is ever cleared silently.</p>
+{% endif %}
+{% endblock %}
