@@ -1,6 +1,6 @@
 # vigil
 
-[![CI](https://github.com/acilox/vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/acilox/vigil/actions/workflows/ci.yml)
+[![CI](https://github.com/Deewakarmishra/vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/Deewakarmishra/vigil/actions/workflows/ci.yml)
 
 A self-hosted **AML alert-triage & SAR-drafting agent**. It reads a
 transaction-monitoring alert the way a senior analyst would — enriching it with
@@ -352,7 +352,7 @@ if Postgres is unreachable.
 ## About this code
 
 Companion demo to the vertical-agent work by
-[acilox](https://github.com/acilox), part of the
+[acilox](https://github.com/Deewakarmishra), part of the
 [Acilox Agent Studio](../demo-studio). It sits on top of an existing
 transaction-monitoring engine (Actimize / Unit21 / in-house) — a triage + drafting
 layer, not a new monitor. The typologies are shaped after published FATF/FinCEN
