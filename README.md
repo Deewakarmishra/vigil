@@ -14,7 +14,7 @@ full cited rationale (never a silent drop), the audit trail is hash-chained, and
 the eval harness reports **false-positive reduction at a fixed false-negative
 rate** — recall is never traded for a prettier number.
 
-This is the **Vigil** demo in the [Acilox Agent Studio](../demo-studio) — the
+This is the **Vigil** demo in the [Agent Studio](../demo-studio) — the
 trust flagship, the fifth of five vertical agents built on a single shared spine
 (ingest → hybrid retrieval → agent loop → typed scope contract → policy engine →
 HITL → audit → eval).
@@ -352,8 +352,8 @@ if Postgres is unreachable.
 ## About this code
 
 Companion demo to the vertical-agent work by
-[acilox](https://github.com/Deewakarmishra), part of the
-[Acilox Agent Studio](../demo-studio). It sits on top of an existing
+[deewakar](https://github.com/Deewakarmishra), part of the
+[Agent Studio](../demo-studio). It sits on top of an existing
 transaction-monitoring engine (Actimize / Unit21 / in-house) — a triage + drafting
 layer, not a new monitor. The typologies are shaped after published FATF/FinCEN
 patterns; the demo runs entirely on synthetic data. For paid implementation, open

@@ -9,7 +9,7 @@ description = "Self-hosted AML alert-triage & SAR-drafting agent: reads a transa
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [{ name = "acilox", email = "hello@acilox.dev" }]
+authors = [{ name = "Deewakar Mishra", email = "acidb062@gmail.com" }]
 keywords = [
     "agent",
     "aml",
